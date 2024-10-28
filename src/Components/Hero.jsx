@@ -2,18 +2,45 @@ import React, { useEffect } from "react";
 import { MovieCard } from "./MovieCard";
 import { fetchFromAPI } from "../utils/axios";
 import { randomChar } from "../utils/random";
+import { useState } from "react";
+import { useRef } from "react";
 
-export const Hero = () => {
+export const Hero = ({ addMovieToList }) => {
+  const [searchedMovie, setSearchedMovie] = useState({});
+  const [bgImg, setBgImg] = useState("");
+  const shouldFetchRef = useRef(true);
+  const searchRef = useRef("");
+  const [searching, setSearching] = useState(false);
   useEffect(() => {
-    fetchMovie(randomChar);
+    if (shouldFetchRef.current) {
+      fetchMovie(randomChar());
+      shouldFetchRef.current = false;
+    }
   }, []);
   const fetchMovie = async (str) => {
     const movie = await fetchFromAPI(str);
-    console.log(movie);
+    setSearchedMovie(movie);
+    setBgImg(movie.Poster);
+    setSearching(false);
+  };
+  const handleOnMovieSearch = () => {
+    const str = searchRef.current.value;
+    fetchMovie(str);
+    searchRef.current.value = "";
   };
 
+  const handleOnDelete = () => {
+    setSearchedMovie({});
+    setSearching(true);
+  };
+
+  const handleOnAddToTheList = (mood) => {
+    addMovieToList({ ...searchedMovie, mood });
+    setSearchedMovie({});
+    setSearching(true);
+  };
   const movieStyle = {
-    backgroundImage: `url(https://www.omdbapi.com/src/poster.jpg)`,
+    backgroundImage: `url(${bgImg})`,
     backgroundRepeat: "no-repeat",
     backgroundPosition: "center",
     backgroundSize: "cover",
@@ -21,36 +48,42 @@ export const Hero = () => {
   };
   return (
     <div>
-      <nav className=" py-3 text-danger fixed">
-        <h2 className="container">MovieWorld</h2>
+      <nav className=" py-3 text-danger fixed transparent-nav">
+        <h2 className="container small-title">MovieWorld</h2>
       </nav>
       <div
         className="hero d-flex justify-content-center align-items-center text-light"
         style={movieStyle}
       >
         <div className="hero-content">
-          <div className="form-center">
-            <div className="text-center">
-              <h1>Search Millions of Movies</h1>
-              <p>Find about the movies more in details before watching them</p>
-            </div>
-          </div>
           <div className="input-group my-5">
             <input
+              ref={searchRef}
+              onFocus={() => setSearching(true)}
               type="text"
               className="form-control"
-              placeholder="Recipient's username"
+              placeholder="Search Movie By Name"
               aria-label="Recipient's username"
               aria-describedby="button-addon2"
             />
-            <button className="btn btn-danger" type="button" id="button-addon2">
-              Button
+            <button
+              onClick={handleOnMovieSearch}
+              className="btn btn-danger"
+              type="button"
+              id="button-addon2"
+            >
+              Search
             </button>
           </div>
-
-          <div className="movie-card-display">
-            <MovieCard />
-          </div>
+          {!searching && (
+            <div className="movie-card-display showMovie">
+              <MovieCard
+                searchedMovie={searchedMovie}
+                deleteFunc={handleOnDelete}
+                handleOnAddToTheList={handleOnAddToTheList}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
